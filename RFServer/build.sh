@@ -1,0 +1,1 @@
+g++ -fpermissive -lpthread -I. -I ../Serial -o RFServer ../Serial/SerialPort.cpp RFServer.cpp
