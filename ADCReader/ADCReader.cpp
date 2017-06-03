@@ -1,19 +1,30 @@
+#include<stdio.h>
+#include<string.h>    //strlen
+#include<stdlib.h>    //strlen
+#include<unistd.h>    //write
+#include <errno.h>
+#include<pthread.h> //for threading , link with lpthread
+#include <ctype.h>
 
-#include "SerialPort.h"
+#include <math.h>
+#include <time.h>
+#include <inttypes.h>
 
-volatile bool listen;
+#include <fcntl.h>
+#include <stropts.h>
+#include <asm/termios.h>
+#include <unistd.h> 
+
 volatile int PORT;
 
-void *(*data_handler)(char[]);
-void *usart_handler(void *);
-
-SerialPort::SerialPort() {
+int main ()
+{
     
     PORT = open("/dev/ttyUSB0", O_RDWR|O_NOCTTY);
 
     if (PORT < 0) {
         fprintf (stderr, "Unable to open serial device: %s\n", strerror(errno));
-        return;
+        return 1;
     }
 
     fcntl(PORT, F_SETFL, 0);
@@ -55,65 +66,62 @@ SerialPort::SerialPort() {
         printf("Serial device was successfully opened.\n");
     } else {
         fprintf (stderr, "Unable to configure serial device: %s\n", strerror(errno));
-        return;
+        return 1;
     }
     
-    // Create listening thread
-    pthread_t listner_thread;
-    if( pthread_create(&listner_thread, NULL, usart_handler, NULL) < 0)
-    {
-        fprintf (stderr, "Unable to create pthread: %s\n", strerror(errno));
-        return;
-    }
-}
+    long            ms; // Milliseconds
+    time_t          s;  // Seconds
+    struct timespec spec_start;
+    struct timespec spec_end;
+    
+    // Start time
+    clock_gettime(CLOCK_REALTIME, &spec_start);
 
-void *usart_handler(void *context) {
-    char buff[8];
-    int rc;
-    char data[1024];
+    char end[] = {13};
+    
+    int maxToRead = 100000;
+    char data[maxToRead + 125];
+    
+    char buff[64];
+    int rc = 0;
     int r_count = 0;
     
-    listen = true;
+    // Send start ADC command
+    write(PORT, "adc 1", strlen("adc 1"));
+    write(PORT, end, strlen(end));
     
-    while (listen) {
-        rc = read(PORT, buff, 8);
+    while (r_count < maxToRead) {
+        rc = read(PORT, buff, 64);
         
         for (int i = 0; i < rc; i++) {
-            if ((buff[i] != 0) && (buff[i] != 127) && (buff[i] != 8)) {
-                data[r_count++] = buff[i];
-                //printf("%c", buff[i]);
-            }
-
-            if (buff[i] == 13) {
-                
-                data[r_count] = 0;
-                
-                fflush(stdout);
-                
-                char sub_data[r_count + 1];
-                
-                memcpy(sub_data, data, r_count - 1);
-                
-                sub_data[r_count] = 0;
-                
-                data_handler(sub_data);
-                r_count = 0;
-            }
+            data[r_count++] = buff[i];
+            printf("%c", buff[i]);
         }
     }
     
-    close(PORT);
+    // Start time
+    clock_gettime(CLOCK_REALTIME, &spec_end);
 
-	return 0;
-}
+    s  = spec_start.tv_sec;
+    ms = round(spec_start.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds    
+    printf("START:%"PRIdMAX"%03ld\n", (intmax_t)s, ms);
+    
 
-void SerialPort::addDataListner(void *(*d_handler)(char[])) {
-	data_handler = d_handler;
-}
-
-void SerialPort::writeCommand(const char serial_cmd[]) {
-    write(PORT, serial_cmd, strlen(serial_cmd));
-    //printf("{%d}", strlen(serial_cmd));
-    char end[] = {13};
+    
+    for (int i = 0; i < r_count; i++) {
+        //printf("%c", data[i]);
+    }
+    
+    s  = spec_end.tv_sec;
+    ms = round(spec_end.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds    
+    printf("\nEND:%"PRIdMAX"%03ld\n", (intmax_t)s, ms);
+    
+    // Send stop ADC command
+    write(PORT, "adc 0", strlen("adc 0"));
     write(PORT, end, strlen(end));
+    
+    close(PORT);
+    
+    
+    return 0;
 }

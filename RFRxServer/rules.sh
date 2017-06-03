@@ -1,0 +1,41 @@
+case $1 in
+     1) ./speech.sh "Shutdown All Systems" "true" & mpc stop > /dev/null 2>&1 & /var/www/alexa/scripts/setRGBLEDValue.sh 0 0 0;;
+    24) /home/pi/repository/PiSocketClient/src/socketClient 192.168.1.120 116 100 0;;
+    25) /home/pi/repository/PiSocketClient/src/socketClient 192.168.1.120 116 101 0;;
+    20) mpc stop > /dev/null 2>&1; ./speech.sh "Stop" "true";;
+    21) mpc play $(cat key_buf.txt);echo -n '' > key_buf.txt;;
+    23) mpc pause > /dev/null 2>&1; ./speech.sh "Pause" "true";;
+    27) mpc next > /dev/null 2>&1;;
+    28) mpc prev > /dev/null 2>&1;;
+    18) mpc seek -1% > /dev/null 2>&1;;
+    19) mpc seek +1% > /dev/null 2>&1;;
+    30) /var/www/alexa/scripts/setRGBLEDValue.sh 1 1 1;;
+    31) /var/www/alexa/scripts/setRGBLEDValue.sh 255 255 255;;
+    32) /var/www/alexa/scripts/setRGBLEDValue.sh 50 5 0;;
+     3) /var/www/alexa/scripts/setRGBLEDValue.sh 0 0 0;;
+    #14) echo -n '0' >> key_buf.txt;;
+     4) ./load_playlist.sh 1;;
+     5) ./load_playlist.sh 2;;
+     6) ./load_playlist.sh 3;;
+     7) ./load_playlist.sh 4;;
+     8) ./load_playlist.sh 5;;
+     9) ./load_playlist.sh 6;;
+    10) ./load_playlist.sh 7;;
+    11) ./load_playlist.sh 8;;
+    12) ./load_playlist.sh 9;;
+    #13) echo -n '' > key_buf.txt;;
+   100) ./save.sh $2 $3 `../util/bytesToInt $4 $5` &;;
+   101) ./load_playlist.sh `./nextPlaylistIndex.sh dec`;;
+   102) ./load_playlist.sh `./nextPlaylistIndex.sh`;;
+   103) mpc stop > /dev/null 2>&1;;
+    # 33) ./speech.sh "This is main remote, please consult the instructions" "true";;
+    # 34) ./speech.sh "Bathroom lights disabled" "true" & /home/pi/repository/PiSocketClient/src/socketClient 192.168.1.120 120 177 101 0; /home/pi/repository/PiSocketClient/src/socketClient 192.168.1.120 120 177 106 0;;
+    # 36) ./speech.sh "Bathroom lights enabled" "true" & /home/pi/repository/PiSocketClient/src/socketClient 192.168.1.120 120 177 107 0;;
+    29) wget -O - http://192.168.1.89/switchToggle > /dev/null 2>&1;;
+    34) wget -O - http://192.168.1.232/switchToggle > /dev/null 2>&1;;
+    35) wget -O - http://192.168.1.21/switchToggle > /dev/null 2>&1;;
+    39) scripts/turnOffDisplay.sh;;
+    40) scripts/turnOnDisplay.sh;;
+     *) echo "INVALID NUMBER -> " $1; ./speech.sh "Unsupported Key code $1" "true";;
+esac
+
